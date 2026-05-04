@@ -144,6 +144,33 @@ dd {
   margin-top: 18px;
 }
 
+/* --- Slider styles --- */
+
+.sliderField input[type="range"] {
+  width: 100%;
+  margin: 8px 0 12px;
+}
+
+.sliderTopLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.sliderTopLine small {
+  color: #657487;
+}
+
+.helpText {
+  margin: 6px 0 0;
+  color: #657487;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* --- Mobile responsiveness --- */
+
 @media (max-width: 760px) {
   .grid,
   .twoCol {

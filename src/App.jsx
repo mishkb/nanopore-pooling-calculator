@@ -9,6 +9,7 @@ export default function App() {
   const [itsSamples, setItsSamples] = useState(6);
   const [sixteenSSamples, setSixteenSSamples] = useState(1);
   const [totalVol, setTotalVol] = useState(11);
+  const [itsCorrectionFactor, setItsCorrectionFactor] = useState(1.4);
 
   const clampSamples = (value) => {
     const number = Number(value);
@@ -24,8 +25,9 @@ export default function App() {
     const nITS = Number(itsSamples);
     const n16S = Number(sixteenSSamples);
     const vTotal = Number(totalVol);
+    const correction = Number(itsCorrectionFactor);
 
-    const invalid = [cITS, c16S, lITS, l16S, nITS, n16S, vTotal].some(
+    const invalid = [cITS, c16S, lITS, l16S, nITS, n16S, vTotal, correction].some(
       (x) => !Number.isFinite(x) || x <= 0
     );
 
@@ -37,7 +39,12 @@ export default function App() {
     const massRatioITSOver16S = (nITS / n16S) * (lITS / l16S);
 
     // Volume = mass / concentration.
-    const volRatioITSOver16S = massRatioITSOver16S * (c16S / cITS);
+    const theoreticalVolRatioITSOver16S = massRatioITSOver16S * (c16S / cITS);
+
+    // Empirical correction lets you compensate for real Nanopore/library-prep bias.
+    // Correction > 1 adds relatively more ITS than the theoretical model.
+    // Correction < 1 adds relatively less ITS.
+    const volRatioITSOver16S = theoreticalVolRatioITSOver16S * correction;
 
     const vol16S = vTotal / (1 + volRatioITSOver16S);
     const volITS = vTotal - vol16S;
@@ -51,6 +58,7 @@ export default function App() {
     return {
       invalid: false,
       massRatioITSOver16S,
+      theoreticalVolRatioITSOver16S,
       volRatioITSOver16S,
       volITS,
       vol16S,
@@ -58,7 +66,7 @@ export default function App() {
       mass16S,
       balanceCheck,
     };
-  }, [itsConc, sixteenSConc, itsLength, sixteenSLength, itsSamples, sixteenSSamples, totalVol]);
+  }, [itsConc, sixteenSConc, itsLength, sixteenSLength, itsSamples, sixteenSSamples, totalVol, itsCorrectionFactor]);
 
   const resetDefaults = () => {
     setItsConc(3);
@@ -68,6 +76,7 @@ export default function App() {
     setItsSamples(6);
     setSixteenSSamples(1);
     setTotalVol(11);
+    setItsCorrectionFactor(1.4);
   };
 
   const downloadCSV = () => {
@@ -82,6 +91,7 @@ export default function App() {
       ["ITS sample count", itsSamples, "samples"],
       ["16S sample count", sixteenSSamples, "samples"],
       ["Total loading volume", totalVol, "uL"],
+      ["Empirical ITS correction factor", itsCorrectionFactor, "multiplier"],
       [],
       ["Result", "Value", "Unit"],
       ["ITS volume", results.volITS.toFixed(3), "uL"],
@@ -89,7 +99,8 @@ export default function App() {
       ["ITS mass", results.massITS.toFixed(3), "ng"],
       ["16S mass", results.mass16S.toFixed(3), "ng"],
       ["ITS:16S mass ratio", results.massRatioITSOver16S.toFixed(3), "ratio"],
-      ["ITS:16S volume ratio", results.volRatioITSOver16S.toFixed(3), "ratio"],
+      ["Theoretical ITS:16S volume ratio", results.theoreticalVolRatioITSOver16S.toFixed(3), "ratio"],
+      ["Corrected ITS:16S volume ratio", results.volRatioITSOver16S.toFixed(3), "ratio"],
       ["Per-sample balance check", results.balanceCheck.toFixed(3), "target 1.000"],
     ];
 
@@ -168,6 +179,36 @@ export default function App() {
 
           <NumberField label="Total library DNA volume" value={totalVol} onChange={setTotalVol} unit="uL" />
 
+          <label className="field sliderField">
+            <span>Empirical ITS correction factor</span>
+            <div className="sliderTopLine">
+              <strong>{Number(itsCorrectionFactor).toFixed(2)}x</strong>
+              <small>Suggested from your previous run: ~1.4x</small>
+            </div>
+            <input
+              type="range"
+              min="0.2"
+              max="3"
+              step="0.05"
+              value={itsCorrectionFactor}
+              onChange={(event) => setItsCorrectionFactor(event.target.value)}
+            />
+            <div className="inputRow">
+              <input
+                type="number"
+                min="0.2"
+                max="10"
+                step="0.05"
+                value={itsCorrectionFactor}
+                onChange={(event) => setItsCorrectionFactor(event.target.value)}
+              />
+              <em>x</em>
+            </div>
+            <p className="helpText">
+              Use 1.0 for the theoretical length/sample-count model. Increase above 1.0 to add relatively more ITS; decrease below 1.0 to add less ITS.
+            </p>
+          </label>
+
           <div className="buttonRow">
             <button onClick={downloadCSV} disabled={results.invalid}>Download CSV</button>
             <button className="secondary" onClick={resetDefaults}>Reset example</button>
@@ -193,7 +234,8 @@ export default function App() {
 
               <dl className="details">
                 <div><dt>ITS:16S mass ratio</dt><dd>{results.massRatioITSOver16S.toFixed(3)} : 1</dd></div>
-                <div><dt>ITS:16S volume ratio</dt><dd>{results.volRatioITSOver16S.toFixed(3)} : 1</dd></div>
+                <div><dt>Theoretical ITS:16S volume ratio</dt><dd>{results.theoreticalVolRatioITSOver16S.toFixed(3)} : 1</dd></div>
+                <div><dt>Corrected ITS:16S volume ratio</dt><dd>{results.volRatioITSOver16S.toFixed(3)} : 1</dd></div>
                 <div><dt>ITS mass loaded</dt><dd>{results.massITS.toFixed(2)} ng</dd></div>
                 <div><dt>16S mass loaded</dt><dd>{results.mass16S.toFixed(2)} ng</dd></div>
                 <div><dt>Per-sample balance check</dt><dd>{results.balanceCheck.toFixed(3)}</dd></div>
@@ -209,12 +251,10 @@ export default function App() {
           <strong>ITS mass / 16S mass = (ITS sample count / 16S sample count) x (ITS length / 16S length)</strong>
         </p>
         <p>
-          <strong>ITS volume / 16S volume = mass ratio x (16S concentration / ITS concentration)</strong>
+          <strong>Theoretical ITS volume / 16S volume = mass ratio x (16S concentration / ITS concentration)</strong>
         </p>
         <p>
-          This estimates equal read depth per sample under the simplifying assumption that read count
-          scales with molecule count. Nanopore length and library-prep biases may still require empirical
-          adjustment after reviewing actual read distributions.
+          The empirical ITS correction factor then multiplies the theoretical volume ratio before the final volumes are calculated. This lets you tune the app using observed read distributions from previous runs. Based on your earlier 5 uL ITS / 6 uL 16S run, a starting correction factor around 1.4 is reasonable for this dataset.
         </p>
       </section>
     </main>
