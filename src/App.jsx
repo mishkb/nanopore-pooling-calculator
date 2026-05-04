@@ -2,19 +2,26 @@ import React, { useMemo, useState } from "react";
 import "./App.css";
 
 export default function App() {
-  const [itsConc, setItsConc] = useState(3);
-  const [sixteenSConc, setSixteenSConc] = useState(1.5);
-  const [itsLength, setItsLength] = useState(600);
-  const [sixteenSLength, setSixteenSLength] = useState(1500);
-  const [itsSamples, setItsSamples] = useState(6);
-  const [sixteenSSamples, setSixteenSSamples] = useState(1);
-  const [totalVol, setTotalVol] = useState(11);
-  const [itsCorrectionFactor, setItsCorrectionFactor] = useState(1.4);
+  // Store inputs as strings so users can delete/retype values without the app forcing defaults mid-edit.
+  const [itsConc, setItsConc] = useState("3.00");
+  const [sixteenSConc, setSixteenSConc] = useState("1.50");
+  const [itsLength, setItsLength] = useState("700");
+  const [sixteenSLength, setSixteenSLength] = useState("1500");
+  const [itsSamples, setItsSamples] = useState("4");
+  const [sixteenSSamples, setSixteenSSamples] = useState("4");
+  const [totalVol, setTotalVol] = useState("11");
+  const [itsCorrectionFactor, setItsCorrectionFactor] = useState("1.40");
 
-  const clampSamples = (value) => {
+  const formatDecimalOnBlur = (value, decimals = 2) => {
     const number = Number(value);
-    if (!Number.isFinite(number)) return 1;
-    return Math.min(12, Math.max(1, Math.round(number)));
+    if (!Number.isFinite(number) || number <= 0) return value;
+    return number.toFixed(decimals);
+  };
+
+  const formatIntegerOnBlur = (value, min = 1, max = 12) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "";
+    return String(Math.min(max, Math.max(min, Math.round(number))));
   };
 
   const results = useMemo(() => {
@@ -69,14 +76,14 @@ export default function App() {
   }, [itsConc, sixteenSConc, itsLength, sixteenSLength, itsSamples, sixteenSSamples, totalVol, itsCorrectionFactor]);
 
   const resetDefaults = () => {
-    setItsConc(3);
-    setSixteenSConc(1.5);
-    setItsLength(600);
-    setSixteenSLength(1500);
-    setItsSamples(6);
-    setSixteenSSamples(1);
-    setTotalVol(11);
-    setItsCorrectionFactor(1.4);
+    setItsConc("3.00");
+    setSixteenSConc("1.50");
+    setItsLength("700");
+    setSixteenSLength("1500");
+    setItsSamples("4");
+    setSixteenSSamples("4");
+    setTotalVol("11");
+    setItsCorrectionFactor("1.40");
   };
 
   const downloadCSV = () => {
@@ -117,17 +124,28 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const NumberField = ({ label, value, onChange, unit, min = 0.001, max, step = "any" }) => (
+  const NumberField = ({
+    label,
+    value,
+    onChange,
+    unit,
+    min = 0.001,
+    max,
+    step = "any",
+    onBlur,
+  }) => (
     <label className="field">
       <span>{label}</span>
       <div className="inputRow">
         <input
           type="number"
+          inputMode="decimal"
           value={value}
           min={min}
           max={max}
           step={step}
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
         />
         <em>{unit}</em>
       </div>
@@ -140,8 +158,8 @@ export default function App() {
         <h1>Nanopore Amplicon Pooling Calculator</h1>
         <p>
           Balance ITS and 16S amplicon pools for approximately equal sequencing depth per sample.
-          The calculation accounts for amplicon length, sample count, DNA concentration, and total
-          library DNA volume.
+          The calculation accounts for amplicon length, sample count, DNA concentration, total
+          library DNA volume, and an optional empirical ITS correction factor.
         </p>
       </section>
 
@@ -150,17 +168,48 @@ export default function App() {
           <h2>Inputs</h2>
 
           <div className="twoCol">
-            <NumberField label="ITS concentration" value={itsConc} onChange={setItsConc} unit="ng/uL" />
-            <NumberField label="16S concentration" value={sixteenSConc} onChange={setSixteenSConc} unit="ng/uL" />
-            <NumberField label="ITS amplicon length" value={itsLength} onChange={setItsLength} unit="bp" />
-            <NumberField label="16S amplicon length" value={sixteenSLength} onChange={setSixteenSLength} unit="bp" />
+            <NumberField
+              label="ITS concentration"
+              value={itsConc}
+              onChange={setItsConc}
+              onBlur={() => setItsConc(formatDecimalOnBlur(itsConc, 2))}
+              unit="ng/uL"
+              step="0.01"
+            />
+            <NumberField
+              label="16S concentration"
+              value={sixteenSConc}
+              onChange={setSixteenSConc}
+              onBlur={() => setSixteenSConc(formatDecimalOnBlur(sixteenSConc, 2))}
+              unit="ng/uL"
+              step="0.01"
+            />
+            <NumberField
+              label="ITS amplicon length"
+              value={itsLength}
+              onChange={setItsLength}
+              onBlur={() => setItsLength(formatIntegerOnBlur(itsLength, 1, 100000))}
+              unit="bp"
+              min={1}
+              step={1}
+            />
+            <NumberField
+              label="16S amplicon length"
+              value={sixteenSLength}
+              onChange={setSixteenSLength}
+              onBlur={() => setSixteenSLength(formatIntegerOnBlur(sixteenSLength, 1, 100000))}
+              unit="bp"
+              min={1}
+              step={1}
+            />
           </div>
 
           <div className="twoCol">
             <NumberField
               label="ITS sample count"
               value={itsSamples}
-              onChange={(value) => setItsSamples(clampSamples(value))}
+              onChange={setItsSamples}
+              onBlur={() => setItsSamples(formatIntegerOnBlur(itsSamples, 1, 12))}
               unit="1-12"
               min={1}
               max={12}
@@ -169,7 +218,8 @@ export default function App() {
             <NumberField
               label="16S sample count"
               value={sixteenSSamples}
-              onChange={(value) => setSixteenSSamples(clampSamples(value))}
+              onChange={setSixteenSSamples}
+              onBlur={() => setSixteenSSamples(formatIntegerOnBlur(sixteenSSamples, 1, 12))}
               unit="1-12"
               min={1}
               max={12}
@@ -177,12 +227,19 @@ export default function App() {
             />
           </div>
 
-          <NumberField label="Total library DNA volume" value={totalVol} onChange={setTotalVol} unit="uL" />
+          <NumberField
+            label="Total library DNA volume"
+            value={totalVol}
+            onChange={setTotalVol}
+            onBlur={() => setTotalVol(formatDecimalOnBlur(totalVol, 2))}
+            unit="uL"
+            step="0.01"
+          />
 
           <label className="field sliderField">
             <span>Empirical ITS correction factor</span>
             <div className="sliderTopLine">
-              <strong>{Number(itsCorrectionFactor).toFixed(2)}x</strong>
+              <strong>{Number(itsCorrectionFactor || 0).toFixed(2)}x</strong>
               <small>Suggested from your previous run: ~1.4x</small>
             </div>
             <input
@@ -190,17 +247,19 @@ export default function App() {
               min="0.2"
               max="3"
               step="0.05"
-              value={itsCorrectionFactor}
+              value={Number(itsCorrectionFactor) || 1}
               onChange={(event) => setItsCorrectionFactor(event.target.value)}
             />
             <div className="inputRow">
               <input
                 type="number"
+                inputMode="decimal"
                 min="0.2"
                 max="10"
                 step="0.05"
                 value={itsCorrectionFactor}
                 onChange={(event) => setItsCorrectionFactor(event.target.value)}
+                onBlur={() => setItsCorrectionFactor(formatDecimalOnBlur(itsCorrectionFactor, 2))}
               />
               <em>x</em>
             </div>
@@ -219,7 +278,7 @@ export default function App() {
           <h2>Pooling volumes</h2>
 
           {results.invalid ? (
-            <p className="warning">Enter positive values for all concentrations, lengths, sample counts, and total volume.</p>
+            <p className="warning">Enter positive values for all concentrations, lengths, sample counts, total volume, and correction factor.</p>
           ) : (
             <>
               <div className="resultBox">
