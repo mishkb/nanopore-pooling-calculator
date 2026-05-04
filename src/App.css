@@ -29,6 +29,10 @@ body {
   margin-top: 20px;
 }
 
+.secondaryGrid {
+  margin-top: 18px;
+}
+
 .card {
   background: white;
   border-radius: 18px;
@@ -59,15 +63,25 @@ body {
   align-items: center;
 }
 
-input {
+input,
+textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 10px;
   font-size: 1rem;
+  border: 1px solid #ccd4df;
+  border-radius: 10px;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+  font-family: Arial, sans-serif;
+  line-height: 1.4;
 }
 
 .inputRow em {
-  width: 55px;
+  width: 70px;
   color: #657487;
   font-style: normal;
   font-size: 0.9rem;
@@ -117,6 +131,10 @@ button:disabled {
   font-size: 2.2rem;
 }
 
+.smallResult strong {
+  font-size: 1.8rem;
+}
+
 .details div {
   display: flex;
   justify-content: space-between;
@@ -132,23 +150,44 @@ dt {
 dd {
   margin: 0;
   font-weight: 700;
+  text-align: right;
 }
 
 .warning {
   background: #fff4d6;
   padding: 12px;
   border-radius: 12px;
+  color: #6d4b00;
 }
 
-.formula {
+.warningsCard {
+  margin-top: 18px;
+  background: #fffaf0;
+}
+
+.warningsCard ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.warningsCard li {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.formula,
+.calibrationCard {
   margin-top: 18px;
 }
 
-/* --- Slider styles --- */
+.calibrationResult {
+  margin-top: 14px;
+}
 
 .sliderField input[type="range"] {
   width: 100%;
   margin: 8px 0 12px;
+  padding: 0;
 }
 
 .sliderTopLine {
@@ -163,13 +202,11 @@ dd {
 }
 
 .helpText {
-  margin: 6px 0 0;
+  margin: 6px 0 12px;
   color: #657487;
   font-size: 0.9rem;
   line-height: 1.4;
 }
-
-/* --- Mobile responsiveness --- */
 
 @media (max-width: 760px) {
   .grid,
@@ -187,5 +224,14 @@ dd {
 
   .resultBox strong {
     font-size: 1.8rem;
+  }
+
+  .details div {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  dd {
+    text-align: left;
   }
 }
